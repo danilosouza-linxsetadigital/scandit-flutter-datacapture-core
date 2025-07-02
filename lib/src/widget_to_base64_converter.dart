@@ -24,9 +24,9 @@ extension WidgetToBase64Converter on Widget {
 
     final renderView = RenderView(
       view: lastView,
-      child: RenderPositionedBox(alignment: Alignment.center, child: repaintBoundary),
+      child: RenderPositionedBox(
+          alignment: Alignment.center, child: repaintBoundary),
       configuration: ViewConfiguration(
-        physicalConstraints: BoxConstraints.tight(logicalSize) * lastView.devicePixelRatio,
         logicalConstraints: BoxConstraints.tight(logicalSize),
         devicePixelRatio: lastView.devicePixelRatio,
       ),
@@ -55,7 +55,8 @@ extension WidgetToBase64Converter on Widget {
     // the only way to catch this is to add a global error handler. This is done
     // the lines above. When it catches an error it will just throw it as
     // ArgumentError
-    final rootElement = renderObjectToWidgetAdapter.attachToRenderTree(buildOwner);
+    final rootElement =
+        renderObjectToWidgetAdapter.attachToRenderTree(buildOwner);
 
     FlutterError.onError = previousErrorHandler;
 
@@ -63,7 +64,7 @@ extension WidgetToBase64Converter on Widget {
 
     buildOwner.buildScope(rootElement);
 
-    await Future.delayed(const Duration(milliseconds: 20));
+    await Future.delayed(Duration(milliseconds: 20));
 
     buildOwner.buildScope(rootElement);
     buildOwner.finalizeTree();
@@ -72,7 +73,8 @@ extension WidgetToBase64Converter on Widget {
     pipelineOwner.flushCompositingBits();
     pipelineOwner.flushPaint();
 
-    final image = await repaintBoundary.toImage(pixelRatio: lastView.devicePixelRatio);
+    final image =
+        await repaintBoundary.toImage(pixelRatio: lastView.devicePixelRatio);
 
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 

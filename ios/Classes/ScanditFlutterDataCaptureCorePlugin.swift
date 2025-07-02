@@ -17,15 +17,6 @@ enum FunctionName {
     static let emitFeedback = "emitFeedback"
     static let viewPointForFramePoint = "viewPointForFramePoint"
     static let viewQuadrilateralForFrameQuadrilateral = "viewQuadrilateralForFrameQuadrilateral"
-    static let switchCameraToDesiredState = "switchCameraToDesiredState"
-    static let addModeToContext = "addModeToContext"
-    static let removeModeFromContext = "removeModeFromContext"
-    static let removeAllModesFromContext = "removeAllModesFromContext"
-    static let updateDataCaptureView = "updateDataCaptureView"
-    static let addOverlay = "addOverlay"
-    static let removeOverlay = "removeOverlay"
-    static let removeAllOverlays = "removeAllOverlays"
-    static let getOpenSourceSoftwareLicenseInfo = "getOpenSourceSoftwareLicenseInfo"
 }
 
 public class ScanditFlutterDataCaptureCore: NSObject, FlutterPlugin, DeserializationLifeCycleObserver {
@@ -34,7 +25,6 @@ public class ScanditFlutterDataCaptureCore: NSObject, FlutterPlugin, Deserializa
                                                binaryMessenger: registrar.messenger())
         let methodChannel = FlutterMethodChannel(name: "com.scandit.datacapture.core/method_channel",
                                                  binaryMessenger: registrar.messenger())
-
         let eventEmitter = FlutterEventEmitter(eventChannel: eventChannel)
         let frameSourceListener = FrameworksFrameSourceListener(eventEmitter: eventEmitter)
         let frameSourceDeserializer = FrameworksFrameSourceDeserializer(frameSourceListener: frameSourceListener,
@@ -46,9 +36,9 @@ public class ScanditFlutterDataCaptureCore: NSObject, FlutterPlugin, Deserializa
                                     dataCaptureContextListener: contextListener,
                                     dataCaptureViewListener: viewListener)
         let corePlugin = ScanditFlutterDataCaptureCore(coreModule: coreModule, methodChannel: methodChannel)
-        registrar.addMethodCallDelegate(corePlugin, channel: methodChannel)
+        let captureViewFactory = FlutterCaptureViewFactory()
 
-        let captureViewFactory = FlutterCaptureViewFactory(coreModule: coreModule)
+        registrar.addMethodCallDelegate(corePlugin, channel: methodChannel)
         registrar.register(captureViewFactory, withId: "com.scandit.DataCaptureView")
 
     }
@@ -60,8 +50,27 @@ public class ScanditFlutterDataCaptureCore: NSObject, FlutterPlugin, Deserializa
     private let methodChannel: FlutterMethodChannel
     private let coreModule: CoreModule
 
+    public static var lastFrame: FrameData? {
+        get {
+            LastFrameData.shared.frameData
+        }
+        set {
+            LastFrameData.shared.frameData = newValue
+        }
+    }
+
+    public static func getLastFrameData(reply: @escaping FlutterResult) {
+        LastFrameData.shared.getLastFrameDataJSON {
+            reply($0)
+        }
+    }
+
     public static func register(modeDeserializer: DataCaptureModeDeserializer) {
         Deserializers.Factory.add(modeDeserializer)
+    }
+
+    public static func register(componentDeserializer: DataCaptureComponentDeserializer) {
+        Deserializers.Factory.add(componentDeserializer)
     }
 
     public init(coreModule: CoreModule, methodChannel: FlutterMethodChannel) {
@@ -139,26 +148,10 @@ public class ScanditFlutterDataCaptureCore: NSObject, FlutterPlugin, Deserializa
             case FunctionName.viewQuadrilateralForFrameQuadrilateral:
                 let quadrilateralJSON = methodCall.arguments as! String
                 self.viewQuadrilateralForFrameQuadrilateral(quadrilateralJSON, reply: result)
-            case FunctionName.switchCameraToDesiredState:
-                let desiredStateJson = methodCall.arguments as! String
-                self.coreModule.switchCameraToDesiredState(stateJson: desiredStateJson, result: FlutterFrameworkResult(reply: result))
-            case FunctionName.addModeToContext:
-                let modeJson = methodCall.arguments as! String
-                self.coreModule.addModeToContext(modeJson: modeJson, result:  FlutterFrameworkResult(reply: result))
-            case FunctionName.removeModeFromContext:
-                let modeJson = methodCall.arguments as! String
-                self.coreModule.removeModeFromContext(modeJson: modeJson, result:  FlutterFrameworkResult(reply: result))
-            case FunctionName.removeAllModesFromContext:
-                self.coreModule.removeAllModes(result: FlutterFrameworkResult(reply: result))
-            case FunctionName.updateDataCaptureView:
-                let viewJson = methodCall.arguments as! String
-                self.coreModule.updateDataCaptureView(viewJson: viewJson, result: FlutterFrameworkResult(reply: result))
-            case FunctionName.getOpenSourceSoftwareLicenseInfo:
-                self.coreModule.getOpenSourceSoftwareLicenseInfo(result: FlutterFrameworkResult(reply: result))
             default:
                 result(FlutterMethodNotImplemented)
             }
         }
-        dispatchMain(handlerBlock)
+        dispatchMainSync(handlerBlock)
     }
 }
